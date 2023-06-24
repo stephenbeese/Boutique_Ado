@@ -8,7 +8,6 @@ from products.models import Product
 
 
 class Order(models.Model):
-
     order_number = models.CharField(max_length=32, null=False, editable=False)
     full_name = models.CharField(max_length=50, null=False, blank=False)
     email = models.EmailField(max_length=254, null=False, blank=False)
@@ -35,7 +34,7 @@ class Order(models.Model):
         Update grand total each time a line item is added,
         accounting for delivery costs
         """
-        self.order_total = self.lineitems.aggreage(Sum('lineitem_total'))['lineitem_total__sum']
+        self.order_total = self.lineitems.aggregate(Sum('lineitem_total'))['lineitem_total__sum'] or 0
         if self.order_total < settings.FREE_DELIVERY_THRESHOLD:
             self.delivery_cost = self.order_total * settings.STANDARD_DELIVERY_PERCENTAGE / 100
         else:
@@ -43,7 +42,6 @@ class Order(models.Model):
         
         self.grand_total = self.order_total + self.delivery_cost
         self.save()
-
 
     def save(self, *args, **kwargs):
         """
@@ -53,7 +51,7 @@ class Order(models.Model):
         if not self.order_number:
             self.order_number = self._generate_order_number()
 
-        super.save(*args, **kwargs)
+        super().save(*args, **kwargs)
     
     def __str__(self):
         return self.order_number
@@ -72,7 +70,7 @@ class OrderLineItem(models.Model):
         and update the order total
         """
         self.lineitem_total = self.product.price * self.quantity
-        super.save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'SKU {self.product.sku} on order {self.order.order_number}'
